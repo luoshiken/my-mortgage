@@ -1,0 +1,177 @@
+<!--
+	此示例下载自 https://echarts.apache.org/examples/zh/editor.html?c=bar-y-category-stack
+-->
+<!DOCTYPE html>
+<html lang="zh-CN" style="height: 100%">
+
+<head>
+  <meta charset="utf-8">
+</head>
+
+<body style="height: 100%; margin: 0">
+  <div style="text-align: center;">哈哈哈 精彩人生</div>
+  <div id="container" style="height: 8000px"></div>
+
+
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+  <!-- Uncomment this line if you want to dataTool extension
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.0/dist/extension/dataTool.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to use gl extension
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts-gl@2/dist/echarts-gl.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to echarts-stat extension
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts-stat@latest/dist/ecStat.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to use map
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js"></script>
+  -->
+  <!-- Uncomment these two lines if you want to use bmap extension
+  <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=YOUR_API_KEY"></script>
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.0/dist/extension/bmap.min.js"></script>
+  -->
+
+  <script type="text/javascript">
+    //期次数组
+    let categoryArr = []
+    //偿还本金数组
+    let chbjArr = []
+    //偿还利息数组
+    let chlxArr = []
+
+    // console.log(categoryArr)
+    // 等额本息
+    function debx(year_lilv, money, month) {
+      money = (money * 10000);
+      var active = year_lilv * 10 / 12 * 0.001;
+      var t1 = Math.pow(1 + active, month);
+      var t2 = t1 - 1;
+      var tmp = t1 / t2;
+      var monthratio = active * tmp; //月利率
+      var monthBack = (money * monthratio).toFixed(2); //每月支付本息
+      year_lilv = year_lilv * 0.01; //百分比
+      var yue_lilv = ((year_lilv / 12));
+      var objArray = new Array(); //等额本息结果二维数组
+      var ljch_bj = 0; //累积偿还本金
+      var pre_sybj = 0; //上一个月剩余本金
+      var i = 1;
+      for (i = 1; i <= month; i++) { //等额本息
+        objArray[i - 1] = new Array(); //声明二维，每一个一维数组里面的一个元素都是一个数组；
+        objArray[i - 1]['qc'] = `第${i}期`; //期次
+        objArray[i - 1]['chbx'] = monthBack; //第i个月，偿还本息（元） 月供
+        if (i == 1) { //第一个月
+          pre_sybj = money;
+        } else {
+          pre_sybj = objArray[i - 2]['sybj'];
+        }
+        objArray[i - 1]['chlx'] = (pre_sybj * yue_lilv).toFixed(2); //第i个月，偿还利息（元）每月付息额 =（贷款本金-已还清贷款本金）×月利率
+        var chbj = (objArray[i - 1]['chbx'] - objArray[i - 1]['chlx']); //第i个月，偿还本金（元）
+        objArray[i - 1]['chbj'] = chbj.toFixed(2);
+        ljch_bj += chbj;
+        var sybj = (money - ljch_bj);
+        objArray[i - 1]['sybj'] = sybj.toFixed(2); //第i个月，剩余本金（元）
+        if (sybj <= 1) { //最后一个月出现小于1元的值
+          objArray[i - 1]['sybj'] = 0.00; //第i个月，剩余本金（元）
+        }
+      }
+      var yg = monthBack; //月供
+      var ljhkze = monthBack * month; //累计还款总额
+      var lxze = ljhkze - money; //利息总额
+      var yxxdy = monthBack * 2; //月薪需大于
+      var resArray = new Array();
+      resArray['simp_res'] = new Array(); //顶部基础信息数组
+      resArray['list_res'] = new Array(); //底部列表信息数组
+      resArray['simp_res']['yg'] = parseFloat(yg).toFixed(0);
+      resArray['simp_res']['ljhkze'] = parseFloat(ljhkze).toFixed(0);
+      resArray['simp_res']['lxze'] = parseFloat(lxze).toFixed(0);
+      resArray['simp_res']['yxxdy'] = parseFloat(yxxdy).toFixed(0);
+      resArray['list_res'] = objArray;
+
+      return resArray;
+    }
+    let res = debx(5.8, 56, 360);
+    let data = res.list_res;
+    data.forEach(i => {
+      categoryArr.push(i.qc)
+      chbjArr.push(i.chbj)
+      chlxArr.push(i.chlx)
+    });
+
+    categoryArr = categoryArr.reverse();
+    chbjArr = chbjArr.reverse();
+    chlxArr = chlxArr.reverse();
+
+
+
+
+    var dom = document.getElementById('container');
+    var myChart = echarts.init(dom, null, {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+    var app = {};
+
+    var option;
+
+    option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          // Use axis to trigger tooltip
+          type: 'shadow' // 'shadow' as default; can also be 'line' or 'shadow'
+        }
+      },
+      legend: {},
+      grid: {
+        left: '2%',
+        right: '2%',
+        bottom: '2%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value'
+      },
+      yAxis: {
+        type: 'category',
+        data: categoryArr
+      },
+      series: [
+        {
+          name: '利息',
+          type: 'bar',
+          stack: 'total',
+          label: {
+            show: true
+          },
+          emphasis: {
+            focus: 'series'
+          },
+          data: chlxArr
+        },
+        {
+          name: '本金',
+          type: 'bar',
+          stack: 'total',
+          label: {
+            show: true
+          },
+          emphasis: {
+            focus: 'series'
+          },
+          data: chbjArr
+        },
+
+
+      ]
+    };
+
+    if (option && typeof option === 'object') {
+      myChart.setOption(option);
+    }
+
+    window.addEventListener('resize', myChart.resize);
+  </script>
+</body>
+
+</html>
